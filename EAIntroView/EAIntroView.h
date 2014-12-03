@@ -51,9 +51,12 @@ enum EAIntroViewTags {
 - (id)initWithFrame:(CGRect)frame andPages:(NSArray *)pagesArray;
 
 - (void)showInView:(UIView *)view animateDuration:(CGFloat)duration;
+- (void)showInView:(UIView *)view animateDuration:(CGFloat)duration defaultPageIndex:(NSInteger)pageIndex;
 - (void)hideWithFadeOutDuration:(CGFloat)duration;
 
 - (void)setCurrentPageIndex:(NSInteger)currentPageIndex;
 - (void)setCurrentPageIndex:(NSInteger)currentPageIndex animated:(BOOL)animated;
+
+@property BOOL skipButtonWasTapped;
 
 @end

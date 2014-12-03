@@ -74,7 +74,7 @@
 
 - (void)makePanelVisibleAtIndex:(NSInteger)panelIndex{
     [UIView animateWithDuration:0.3 animations:^{
-        for (int idx = 0; idx < _pages.count; idx++) {
+        for (int idx = 0; idx < self.pages.count; idx++) {
             if (idx == panelIndex) {
                 [[self viewForPageIndex:idx] setAlpha:1];
             } else {
@@ -119,9 +119,9 @@
 }
 
 - (void)finishIntroductionAndRemoveSelf {
-	if ([(id)self.delegate respondsToSelector:@selector(introDidFinish:)]) {
-		[self.delegate introDidFinish:self];
-	}
+    if ([(id)self.delegate respondsToSelector:@selector(introDidFinish:)]) {
+        [self.delegate introDidFinish:self];
+    }
     
     //prevent last page flicker on disappearing
     self.alpha = 0;
@@ -135,6 +135,7 @@
 }
 
 - (void)skipIntroduction {
+    self.skipButtonWasTapped = YES;
     [self hideWithFadeOutDuration:0.3];
 }
 
@@ -289,7 +290,7 @@
     if([page.desc length]) {
         CGRect descLabelFrame;
         
-        if(page.descWidth != 0) {
+        if(page.descWidth != 0.0) {
             descLabelFrame = CGRectMake((self.frame.size.width - page.descWidth)/2, self.frame.size.height - page.descPositionY, page.descWidth, 500);
         } else {
             descLabelFrame = CGRectMake(0, self.frame.size.height - page.descPositionY, self.scrollView.frame.size.width, 500);
@@ -346,7 +347,11 @@
     self.pageControl.numberOfPages = _pages.count;
     [self addSubview:self.pageControl];
     
-    self.skipButton = [[UIButton alloc] initWithFrame:CGRectMake(self.scrollView.frame.size.width - 80, self.pageControl.frame.origin.y - ((30 - self.pageControl.frame.size.height)/2), 80, 30)];
+    // JLM modified to change button type, allowing tint color updates
+    self.skipButton = [UIButton buttonWithType:UIButtonTypeRoundedRect];
+    CGRect skipButtonFrame = CGRectMake(self.scrollView.frame.size.width - 80, self.pageControl.frame.origin.y - ((30 - self.pageControl.frame.size.height)/2), 80, 30);
+    self.skipButton.frame = skipButtonFrame;
+    
     [self.skipButton setTitle:NSLocalizedString(@"Skip", nil) forState:UIControlStateNormal];
     [self.skipButton addTarget:self action:@selector(skipIntroduction) forControlEvents:UIControlEventTouchUpInside];
     [self addSubview:self.skipButton];
@@ -646,19 +651,27 @@ float easeOutValue(float value) {
 #pragma mark - Actions
 
 - (void)showInView:(UIView *)view animateDuration:(CGFloat)duration {
+    [self showInView:view animateDuration:duration defaultPageIndex:0];
+}
+
+- (void)showInView:(UIView *)view animateDuration:(CGFloat)duration defaultPageIndex:(NSInteger)pageIndex {
     self.alpha = 0;
-    _currentPageIndex = 0;
+    
+    _currentPageIndex = pageIndex;
     self.scrollView.contentOffset = CGPointZero;
     [view addSubview:self];
     
     [UIView animateWithDuration:duration animations:^{
         self.alpha = 1;
     } completion:^(BOOL finished) {
-        EAIntroPage* currentPage = _pages[self.currentPageIndex];
+        // JLM modified to assign the requested page index
+        self.currentPageIndex = pageIndex;
+        
+        EAIntroPage* currentPage = self.pages[self.currentPageIndex];
         if(currentPage.onPageDidAppear) currentPage.onPageDidAppear();
         
         if ([(id)self.delegate respondsToSelector:@selector(intro:pageAppeared:withIndex:)]) {
-            [self.delegate intro:self pageAppeared:_pages[self.currentPageIndex] withIndex:self.currentPageIndex];
+            [self.delegate intro:self pageAppeared:self.pages[self.currentPageIndex] withIndex:self.currentPageIndex];
         }
     }];
 }
@@ -667,8 +680,8 @@ float easeOutValue(float value) {
     [UIView animateWithDuration:duration animations:^{
         self.alpha = 0;
     } completion:^(BOOL finished){
-		[self finishIntroductionAndRemoveSelf];
-	}];
+        [self finishIntroductionAndRemoveSelf];
+    }];
 }
 
 - (void)setCurrentPageIndex:(NSInteger)currentPageIndex {
